@@ -1,0 +1,124 @@
+	Table store {
+  id uuid [primary key]
+  name varchar
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table users {
+  id uuid [primary key]
+  store_id uuid
+  username varchar
+  role_id uuid [not null]
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table roles {
+  id uuid [primary key]
+  name varchar
+  created_at timestamp
+  updated_at timestamp
+  
+}
+
+Table product_variants {
+  id uuid
+  name varchar
+  product_id uuid
+  additional_price decimal
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table product {
+  id uuid [primary key]
+  name varchar
+  qty number
+  store_id uuid [not null]
+  status varchar
+  price decimal
+  created_at timestamp
+  updated_at timestamp
+
+}
+
+Table order_items {
+  id uuid [primary key]
+  order_id uuid [not null]
+  product_id uuid [not null]
+  product_variants uuid [not null]
+  qty number
+  unit_price decimal
+  sub_total decimal
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table cashier_shift {
+  id uuid
+  cashier_id uuid [not null]
+  store_id uuid [not null]
+  start_time timestamp
+  end_time timestamp
+  starting_cash decimal
+  ending_cash decimal
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table orders {
+  id uuid [primary key]
+  store_id uuid [not null]
+  order_type varchar [not null] // Isinya: 'DINE_IN' (Makan di tempat) atau 'TAKEAWAY' (Bawa pulang)
+  customer_id uuid [null] // Ini murni untuk program loyalitas/member. Boleh kosong kalau pelanggan tidak mau jadi member.
+  cashier_id uuid [not null]
+  table_number varchar [null] // Boleh kosong. Jika 'DINE_IN', kasir wajib mengisi "Meja 12". Jika 'TAKEAWAY', biarkan kosong.
+  voucher_id uuid
+  payment_method varchar
+  cash_received decimal
+  change_amount decimal
+  total_price decimal
+  created_at timestamp
+  updated_at timestamp
+}
+
+
+
+Table voucher { 
+  id uuid [primary key]
+  code varchar
+  store_id uuid [not null]
+  description text
+  discount_percentage int [null]
+  max_discount_amount decimal [null]
+  free_product_id uuid [null]
+  free_qty int
+  quota int
+  min_purchase decimal [null]
+  type varchar [not null]
+  is_active boolean
+  expired_at timestamp
+  created_at timestamp
+  updated_at timestamp
+}
+
+Ref store_id_user: users.store_id ?> store.id // many-to-one
+Ref role_id_user: users.role_id ?> roles.id // many-to-one
+ref store_id_product: product.store_id ?> store.id
+ref order_id_order_items: order_items.order_id ?> orders.id
+ref cashire_id: orders.cashier_id ?> users.id
+ref free_items: voucher.free_product_id ?>product.id
+ref voucher_store: voucher.store_id ?>store.id
+ref order_voucher: orders.voucher_id ?>voucher.id
+ref product_variants_product_id: product_variants.product_id ?> product.id
+ref orders_product_variants: order_items.product_variants ?> product_variants.id 
+ref order_store_id: orders.store_id ?> store.id 
+ref order_customer_id: orders.customer_id ?> users.id
+ref cashier_shift_store: cashier_shift.store_id ?> store.id
+ref cashier_shift_cashier_id: cashier_shift.cashier_id ?> users.id
+
+
+
+
+

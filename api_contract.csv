@@ -1,0 +1,14 @@
+Phase,Service_Name,Port,HTTP_Method,Endpoint,Description,Request_Body_Payload,Notes
+MVP,Identity Service,8080,POST,/api/v1/auth/login,Kasir melakukan login,"{""username"": ""..."", ""password"": ""...""}",Mengembalikan JWT Token
+MVP,Product Service,8081,POST,/api/v1/products,Tambah barang baru,"{""name"": ""..."", ""price"": 10000, ""stock"": 50}",Superadmin Only
+MVP,Product Service,8081,GET,/api/v1/products,Menampilkan katalog barang,,Bisa diakses Kasir
+MVP,Product Service,8081,PUT,/api/v1/products/deduct,Mengurangi stok barang (Internal),"[{""product_id"": ""..."", ""qty"": 2}]",Hanya boleh ditembak oleh Order Service
+MVP,Order Service,8082,POST,/api/v1/orders,Kasir mencetak struk / bayar,"{""cashier_id"": ""..."", ""items"": [{...}]}",Akan memanggil API Deduct Stock di Product Service
+MID,Identity Service,8080,POST,/api/v1/stores,Mendaftarkan toko baru (Multi-tenant),"{""name"": ""..."", ""address"": ""...""}",Superadmin Only
+MID,Identity Service,8080,POST,/api/v1/users,Membuat akun kasir untuk toko tertentu,"{""username"": ""..."", ""store_id"": ""...""}",Superadmin Only
+MID,Order Service,8082,POST,/api/v1/shifts/open,Kasir memulai shift pagi,"{""cashier_id"": ""..."", ""starting_cash"": 100000}",
+MID,Order Service,8082,POST,/api/v1/shifts/close,Kasir menutup shift sore,"{""cashier_id"": ""..."", ""ending_cash"": 500000}",
+MID,Order Service,8082,GET,/api/v1/reports,Melihat laporan pendapatan,?store_id=123&start_date=2026-01-01,Superadmin Only
+FINAL,Promo Service,8083,POST,/api/v1/vouchers,Membuat kupon diskon baru,"{""code"": ""..."", ""discount_amount"": 5000}",Superadmin Only
+FINAL,Promo Service,8083,POST,/api/v1/vouchers/use,Validasi dan kurangi kuota voucher (Internal),"{""code"": ""..."", ""total_price"": 50000}",Hanya boleh ditembak oleh Order Service
+FINAL,API Gateway,80,ALL,http://api.kamu.com/*,Pintu masuk utama untuk Frontend,,Otomatis mem-forward ke port 8080/8081/8082
