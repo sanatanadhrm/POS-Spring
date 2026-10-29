@@ -10,15 +10,18 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import com.example.cashier.commons.properties.SecretProperties;
 
+import io.micrometer.observation.ObservationRegistry;
 import jakarta.servlet.http.HttpServletRequest;
 
 @Configuration
 public class RestApiConfig {
 
     private final SecretProperties secretProperties;
+    private final ObservationRegistry observationRegistry;
 
-    public RestApiConfig(SecretProperties secretProperties) {
+    public RestApiConfig(SecretProperties secretProperties, ObservationRegistry observationRegistry) {
         this.secretProperties = secretProperties;
+        this.observationRegistry = observationRegistry;
     }
 
     private ClientHttpRequestInterceptor commonHeaderInterceptor() {
@@ -45,6 +48,7 @@ public class RestApiConfig {
         return RestClient.builder()
                 .baseUrl(this.secretProperties.getAuthServiceUrl())
                 .requestInterceptor(commonHeaderInterceptor())
+                .observationRegistry(this.observationRegistry)
                 .build();
     }
 

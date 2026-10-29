@@ -10,8 +10,12 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.example.cashier.commons.dto.WebResponse;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.StatusCode;
+import lombok.extern.slf4j.Slf4j;
 
 @RestControllerAdvice
+@Slf4j
 public class GlobalException {
     // 1. Tangkap 400 Bad Request (Misal: Input tidak valid, Password salah)
     @ExceptionHandler(BadRequestException.class)
@@ -47,6 +51,16 @@ public class GlobalException {
     // terduga)
     @ExceptionHandler(Exception.class)
     public ResponseEntity<WebResponse<String>> handleGeneralException(Exception ex) {
+        log.error("Internal Server Error: ", ex);
+        try {
+            Span currentSpan = Span.current();
+            if (currentSpan != null && currentSpan.isRecording()) {
+                currentSpan.recordException(ex);
+                currentSpan.setStatus(StatusCode.ERROR, ex.getMessage() != null ? ex.getMessage() : "Internal Server Error");
+            }
+        } catch (Exception traceEx) {
+            log.warn("Failed to record exception to OpenTelemetry span: {}", traceEx.getMessage());
+        }
         // Jangan tampilkan pesan asli sistem ke user, cukup berikan pesan umum
         return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR,
                 "Terjadi kesalahan pada server. Silakan coba lagi nanti.");

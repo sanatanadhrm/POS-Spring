@@ -27,5 +27,5 @@ public class OrderCreatedEvent implements Serializable {
     private String tableNumber;
     private BigDecimal totalPrice;
     private Integer totalItems;
-    private LocalDateTime createdAt;
+    private String createdAt;
 }

@@ -6,6 +6,8 @@ volumes:
   pg_data:
   rabbitmq_data:
   redis_data:
+  grafana_data:
+  tempo_data:
 
 services:
   postgres-db:
@@ -76,6 +78,38 @@ services:
       - auth-cashier-service
       - product-cashier-service
       - order-cashier-service
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    environment:
+      GF_SERVER_ROOT_URL: http://localhost:3005
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+      GF_USERS_ALLOW_SIGN_UP: ${GRAFANA_USERS_ALLOW_SIGN_UP}
+    restart: unless-stopped
+    volumes:
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3005:3000"
+    networks:
+      - cashier-net
+    depends_on:
+      - prometheus
+  tempo:
+    image: grafana/tempo:latest
+    container_name: tempo
+    command: [ "-config.file=/etc/tempo.yaml" ]
+    volumes:
+      - ./tempo.yaml:/etc/tempo.yaml
+      - tempo_data:/var/tempo
+    ports:
+      - "3200:3200"
+      - "4318:4318"
+    networks:
+      - cashier-net
+    depends_on:
+      - grafana
 
   auth-cashier-service:
     build:
@@ -148,4 +182,3 @@ services:
         condition: service_healthy
       redis-cache:
         condition: service_healthy
-

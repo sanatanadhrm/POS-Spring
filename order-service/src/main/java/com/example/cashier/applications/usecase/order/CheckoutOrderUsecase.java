@@ -182,7 +182,7 @@ public class CheckoutOrderUsecase {
                     .tableNumber(savedOrder.getTableNumber())
                     .totalPrice(savedOrder.getTotalPrice())
                     .totalItems(savedOrder.getItems() != null ? savedOrder.getItems().size() : 0)
-                    .createdAt(savedOrder.getCreatedAt() != null ? savedOrder.getCreatedAt() : java.time.LocalDateTime.now())
+                    .createdAt(savedOrder.getCreatedAt() != null ? savedOrder.getCreatedAt().toString() : java.time.LocalDateTime.now().toString())
                     .build();
             this.orderEventPublisher.publishOrderCreated(event);
 
