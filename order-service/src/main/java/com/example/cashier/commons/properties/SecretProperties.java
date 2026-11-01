@@ -13,6 +13,7 @@ public class SecretProperties {
     private int refreshTokenExpiredDuration;
     private String authServiceUrl;
     private String productServiceUrl;
+    private String email;
 
     public void setJwtSecret(String jwtSecret) {
         this.jwtSecret = jwtSecret;
@@ -52,5 +53,13 @@ public class SecretProperties {
 
     public void setProductServiceUrl(String productServiceUrl) {
         this.productServiceUrl = productServiceUrl;
+    }
+
+    public String getEmail() {
+        return this.email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 }

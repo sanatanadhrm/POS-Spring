@@ -167,12 +167,12 @@ public class CheckoutOrderUsecase {
 
             CheckoutOrderResponse response = this.orderMapper.mapOrdersToCheckoutOrderResponse(savedOrder);
 
-            // 4. Sukses: Simpan hasil response ke Redis selama 24 jam
             if (hasIdempotencyKey) {
                 this.idempotencyManager.saveResponse(idempotencyKey, response, Duration.ofHours(24));
             }
 
-            // 5. Asynchronous Event: Publikasikan OrderCreatedEvent ke message broker via Port Interface
+            // 5. Asynchronous Event: Publikasikan OrderCreatedEvent ke message broker via
+            // Port Interface
             OrderCreatedEvent event = OrderCreatedEvent.builder()
                     .orderId(savedOrder.getId())
                     .storeId(savedOrder.getStoreId())
@@ -182,7 +182,8 @@ public class CheckoutOrderUsecase {
                     .tableNumber(savedOrder.getTableNumber())
                     .totalPrice(savedOrder.getTotalPrice())
                     .totalItems(savedOrder.getItems() != null ? savedOrder.getItems().size() : 0)
-                    .createdAt(savedOrder.getCreatedAt() != null ? savedOrder.getCreatedAt().toString() : java.time.LocalDateTime.now().toString())
+                    .createdAt(savedOrder.getCreatedAt() != null ? savedOrder.getCreatedAt().toString()
+                            : java.time.LocalDateTime.now().toString())
                     .build();
             this.orderEventPublisher.publishOrderCreated(event);
 
