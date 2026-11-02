@@ -1,7 +1,6 @@
-package com.example.cashier.applications.dto.notification.receipt;
+package com.example.cashier.applications.dto.event;
 
 import java.math.BigDecimal;
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -11,7 +10,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ReceiptItemData {
+public class OrderCreatedEventItem {
     private String productName;
     private Integer qty;
     private BigDecimal unitPrice;

@@ -175,15 +175,20 @@ public class CheckoutOrderUsecase {
             // Port Interface
             OrderCreatedEvent event = OrderCreatedEvent.builder()
                     .orderId(savedOrder.getId())
-                    .storeId(savedOrder.getStoreId())
-                    .cashierId(savedOrder.getCashierId())
+                    .storeName(userResponse.getStoreName())
+                    .cashierName(userResponse.getUsername())
                     .orderType(savedOrder.getOrderType() != null ? savedOrder.getOrderType().name() : null)
                     .paymentMethod(savedOrder.getPaymentMethod() != null ? savedOrder.getPaymentMethod().name() : null)
                     .tableNumber(savedOrder.getTableNumber())
                     .totalPrice(savedOrder.getTotalPrice())
+                    .cashReceive(savedOrder.getCashReceived())
+                    .change(savedOrder.getChangeAmount())
                     .totalItems(savedOrder.getItems() != null ? savedOrder.getItems().size() : 0)
                     .createdAt(savedOrder.getCreatedAt() != null ? savedOrder.getCreatedAt().toString()
                             : java.time.LocalDateTime.now().toString())
+                    .items(savedOrder.getItems().stream()
+                            .map(item -> this.orderMapper.mapOrderItemToOrderCreatedEventItem(item, productMap))
+                            .collect(Collectors.toList()))
                     .build();
             this.orderEventPublisher.publishOrderCreated(event);
 

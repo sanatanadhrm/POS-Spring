@@ -2,6 +2,7 @@ package com.example.cashier.applications.dto.event;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.util.List;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,12 +22,16 @@ import lombok.NoArgsConstructor;
 public class OrderCreatedEvent implements Serializable {
 
     private String orderId;
-    private String storeId;
-    private String cashierId;
+    private String storeName;
+    private String cashierName;
     private String orderType;
     private String paymentMethod;
     private String tableNumber;
     private BigDecimal totalPrice;
+    private BigDecimal cashReceive;
+    private BigDecimal change;
     private Integer totalItems;
     private String createdAt;
+    private List<OrderCreatedEventItem> items;
+
 }

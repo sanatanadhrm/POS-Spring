@@ -1,12 +1,15 @@
 package com.example.cashier.applications.mapper;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
 
+import com.example.cashier.applications.dto.event.OrderCreatedEventItem;
 import com.example.cashier.applications.dto.response.order.CheckoutOrderResponse;
 import com.example.cashier.applications.dto.response.orderitem.CheckoutOrderItemResponse;
+import com.example.cashier.applications.dto.response.product.GetBatchProductResponse;
 import com.example.cashier.domains.orders.entity.OrderItems;
 
 import com.example.cashier.domains.orders.entity.Orders;
@@ -45,4 +48,15 @@ public class OrderMapper {
                 .items(this.mapListOrderItemToCheckoutOrderItemResponse(orders.getItems()))
                 .build();
     }
+
+    public OrderCreatedEventItem mapOrderItemToOrderCreatedEventItem(OrderItems orderItem,
+            Map<String, GetBatchProductResponse> productResponse) {
+        return OrderCreatedEventItem.builder()
+                .productName(productResponse.get(orderItem.getProductVariant()).getName())
+                .qty(orderItem.getQty())
+                .unitPrice(orderItem.getUnitPrice())
+                .subtotal(orderItem.getSubtotal())
+                .build();
+    }
+
 }

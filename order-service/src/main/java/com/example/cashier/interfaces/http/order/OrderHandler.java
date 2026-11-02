@@ -1,5 +1,7 @@
-package com.example.cashier.interfaces.order;
+package com.example.cashier.interfaces.http.order;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -26,7 +28,7 @@ public class OrderHandler {
     }
 
     @PostMapping({ "", "/" })
-    public WebResponse<CheckoutOrderResponse> checkout(
+    public ResponseEntity<WebResponse<CheckoutOrderResponse>> checkout(
             @AuthenticationPrincipal String cashierId,
             @RequestHeader(value = "X-Idempotency-Key", required = true) String idempotencyKey,
             @Valid @RequestBody CheckoutOrderRequest request) {
@@ -35,10 +37,12 @@ public class OrderHandler {
         }
         CheckoutOrderResponse response = this.checkoutOrderUsecase.execute(request, cashierId, idempotencyKey);
 
-        return WebResponse.<CheckoutOrderResponse>builder()
+        WebResponse<CheckoutOrderResponse> body = WebResponse.<CheckoutOrderResponse>builder()
                 .status("Success")
                 .message("Order created successfully")
                 .data(response)
                 .build();
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(body);
     }
 }

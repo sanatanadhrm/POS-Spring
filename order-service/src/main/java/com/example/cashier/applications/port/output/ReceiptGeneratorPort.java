@@ -1,8 +1,8 @@
 package com.example.cashier.applications.port.output;
 
-import com.example.cashier.applications.dto.notification.receipt.ReceiptData;
+import com.example.cashier.applications.dto.event.OrderCreatedEvent;
 
 public interface ReceiptGeneratorPort {
-    byte[] generateReceipt(ReceiptData data);
+    byte[] generateReceipt(OrderCreatedEvent data);
 
 }

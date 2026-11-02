@@ -8,8 +8,8 @@ import java.util.Locale;
 
 import org.springframework.stereotype.Component;
 
-import com.example.cashier.applications.dto.notification.receipt.ReceiptData;
-import com.example.cashier.applications.dto.notification.receipt.ReceiptItemData;
+import com.example.cashier.applications.dto.event.OrderCreatedEvent;
+import com.example.cashier.applications.dto.event.OrderCreatedEventItem;
 import com.example.cashier.applications.port.output.ReceiptGeneratorPort;
 import com.lowagie.text.Document;
 import com.lowagie.text.Element;
@@ -35,7 +35,7 @@ public class OpenPdfReceiptGenerator implements ReceiptGeneratorPort {
     }
 
     @Override
-    public byte[] generateReceipt(ReceiptData data) {
+    public byte[] generateReceipt(OrderCreatedEvent data) {
         log.info("[PDF GENERATOR] Mulai membuat struk untuk Order ID: {}", data.getOrderId());
         // 1. Tentukan ukuran kertas kasir thermal roll (Lebar: 80mm ≈ 226 pt, Tinggi
         // dinamis: 600 pt)
@@ -57,7 +57,7 @@ public class OpenPdfReceiptGenerator implements ReceiptGeneratorPort {
             title.setAlignment(Element.ALIGN_CENTER);
             document.add(title);
             Paragraph storeAddress = new Paragraph(
-                    data.getStoreAddress() != null ? data.getStoreAddress() : "Jl. Kemitraan No. 12, Jakarta",
+                    "Jl. Kemitraan No. 12, Jakarta",
                     fontSmall);
             storeAddress.setAlignment(Element.ALIGN_CENTER);
             document.add(storeAddress);
@@ -69,7 +69,7 @@ public class OpenPdfReceiptGenerator implements ReceiptGeneratorPort {
             metaTable.setWidthPercentage(100);
             metaTable.setWidths(new float[] { 1, 1 });
             addCellNoBorder(metaTable, "No: #" + shortenId(data.getOrderId()), fontRegular, Element.ALIGN_LEFT);
-            addCellNoBorder(metaTable, data.getTransactionDate(), fontRegular, Element.ALIGN_RIGHT);
+            addCellNoBorder(metaTable, data.getCreatedAt(), fontRegular, Element.ALIGN_RIGHT);
             addCellNoBorder(metaTable, "Kasir: " + data.getCashierName(), fontRegular, Element.ALIGN_LEFT);
             addCellNoBorder(metaTable,
                     data.getOrderType() + (data.getTableNumber() != null ? " (" + data.getTableNumber() + ")" : ""),
@@ -83,7 +83,7 @@ public class OpenPdfReceiptGenerator implements ReceiptGeneratorPort {
             itemTable.setWidthPercentage(100);
             itemTable.setWidths(new float[] { 2.5f, 1.5f }); // Kolom Nama Item (lebar), Kolom Subtotal (kanan)
             if (data.getItems() != null && !data.getItems().isEmpty()) {
-                for (ReceiptItemData item : data.getItems()) {
+                for (OrderCreatedEventItem item : data.getItems()) {
                     // Baris 1: Nama Produk
                     addCellNoBorder(itemTable, item.getProductName(), fontBold, Element.ALIGN_LEFT);
                     addCellNoBorder(itemTable, "Rp " + CURRENCY_FORMAT.format(item.getSubtotal()), fontBold,
@@ -109,10 +109,10 @@ public class OpenPdfReceiptGenerator implements ReceiptGeneratorPort {
             addCellNoBorder(paymentTable, "TOTAL:", fontBold, Element.ALIGN_LEFT);
             addCellNoBorder(paymentTable, formatCurrency(data.getTotalPrice()), fontBold, Element.ALIGN_RIGHT);
             addCellNoBorder(paymentTable, "Bayar (" + data.getPaymentMethod() + "):", fontRegular, Element.ALIGN_LEFT);
-            addCellNoBorder(paymentTable, formatCurrency(data.getCashReceived()), fontRegular,
+            addCellNoBorder(paymentTable, formatCurrency(data.getCashReceive()), fontRegular,
                     Element.ALIGN_RIGHT);
             addCellNoBorder(paymentTable, "Kembalian:", fontRegular, Element.ALIGN_LEFT);
-            addCellNoBorder(paymentTable, formatCurrency(data.getChangeAmount()), fontRegular,
+            addCellNoBorder(paymentTable, formatCurrency(data.getChange()), fontRegular,
                     Element.ALIGN_RIGHT);
             document.add(paymentTable);
             document.add(new Paragraph("--------------------------------------------------", fontRegular));

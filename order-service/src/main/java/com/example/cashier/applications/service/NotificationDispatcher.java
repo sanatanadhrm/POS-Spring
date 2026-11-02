@@ -25,8 +25,9 @@ public class NotificationDispatcher {
                 .map(sender -> sender.sendAsync(payload))
                 .toList();
         if (tasks.isEmpty()) {
+
             log.warn("Tidak ada channel notifikasi yang valid untuk Order: {}", payload.getRecipientName());
-            return;
+            throw new RuntimeException("Tidak ada channel notifikasi yang valid");
         }
         CompletableFuture.allOf(tasks.toArray(new CompletableFuture[0])).join();
         log.info("Semua notifikasi berhasil dikirim!");
