@@ -5,7 +5,7 @@ import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
 
 @Component
-@PropertySource("classpath:secret.properties")
+@PropertySource(value = "classpath:secret.properties", ignoreResourceNotFound = true)
 @ConfigurationProperties(prefix = "app.rahasia")
 public class SecretProperties {
     private String jwtSecret;
