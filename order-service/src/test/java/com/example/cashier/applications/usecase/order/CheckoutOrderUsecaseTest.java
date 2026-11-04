@@ -21,6 +21,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.example.cashier.applications.cache.CacheManager;
 import com.example.cashier.applications.dto.event.OrderCreatedEvent;
 import com.example.cashier.applications.dto.request.order.CheckoutOrderRequest;
 import com.example.cashier.applications.dto.request.orderitem.CheckoutOrderItemRequest;
@@ -67,6 +68,9 @@ class CheckoutOrderUsecaseTest {
 
         @Mock
         private OrderEventPublisher orderEventPublisher;
+
+        @Mock
+        private CacheManager cacheManager;
 
         // --- 2. TARGET CLASS YANG DIUJI ---
         // Mockito otomatis menyuntikkan seluruh @Mock di atas ke dalam constructor
@@ -189,7 +193,8 @@ class CheckoutOrderUsecaseTest {
                 // transaksi berhasil
                 verify(idempotencyManager, never()).releaseLock(any());
 
-                // Verifikasi penting: Pastikan event order.created dipublikasikan ke broker tepat 1 kali
+                // Verifikasi penting: Pastikan event order.created dipublikasikan ke broker
+                // tepat 1 kali
                 verify(orderEventPublisher, times(1)).publishOrderCreated(any(OrderCreatedEvent.class));
         }
 

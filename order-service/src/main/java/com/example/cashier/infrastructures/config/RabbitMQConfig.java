@@ -20,11 +20,15 @@ import org.springframework.context.annotation.Configuration;
 public class RabbitMQConfig {
 
     public static final String ORDER_EXCHANGE = "order.exchange";
+
     public static final String ORDER_CREATED_QUEUE = "order.created.queue";
+
     public static final String ORDER_CREATED_ROUTING_KEY = "order.created";
+    public static final String ORDER_RESTORE_ROUTING_KEY = "order.restore";
 
     /**
-     * 1. Exchange: Loket sortir pesan (TopicExchange agar fleksibel dengan routing key bertitik).
+     * 1. Exchange: Loket sortir pesan (TopicExchange agar fleksibel dengan routing
+     * key bertitik).
      */
     @Bean
     public TopicExchange orderExchange() {
@@ -32,7 +36,8 @@ public class RabbitMQConfig {
     }
 
     /**
-     * 2. Queue: Antrean pesan yang bersifat durable (pesan tetap aman tersimpan di disk jika server restart).
+     * 2. Queue: Antrean pesan yang bersifat durable (pesan tetap aman tersimpan di
+     * disk jika server restart).
      */
     @Bean
     public Queue orderCreatedQueue() {
@@ -40,7 +45,8 @@ public class RabbitMQConfig {
     }
 
     /**
-     * 3. Binding: Aturan penyalur yang menghubungkan orderExchange ke orderCreatedQueue.
+     * 3. Binding: Aturan penyalur yang menghubungkan orderExchange ke
+     * orderCreatedQueue.
      */
     @Bean
     public Binding orderCreatedBinding(Queue orderCreatedQueue, TopicExchange orderExchange) {
@@ -48,8 +54,10 @@ public class RabbitMQConfig {
     }
 
     /**
-     * 4. Message Converter: Mengubah payload Java Object <-> JSON String secara otomatis.
-     * Standar enterprise: hindari serialisasi biner bawaan Java karena rawan celah keamanan dan sulit di-debug.
+     * 4. Message Converter: Mengubah payload Java Object <-> JSON String secara
+     * otomatis.
+     * Standar enterprise: hindari serialisasi biner bawaan Java karena rawan celah
+     * keamanan dan sulit di-debug.
      */
     @Bean
     public MessageConverter messageConverter() {

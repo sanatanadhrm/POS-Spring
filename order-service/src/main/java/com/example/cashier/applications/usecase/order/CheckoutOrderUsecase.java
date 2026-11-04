@@ -10,11 +10,11 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
+import com.example.cashier.applications.cache.CacheManager;
 import com.example.cashier.applications.dto.event.OrderCreatedEvent;
+import com.example.cashier.applications.dto.event.OrderRestoreEvent;
 import com.example.cashier.applications.dto.request.order.CheckoutOrderRequest;
-import com.example.cashier.applications.dto.request.product.DeductBatchItemProductRequest;
 import com.example.cashier.applications.dto.request.product.DeductBatchProductRequest;
 import com.example.cashier.applications.dto.request.product.GetBatchProductRequest;
 import com.example.cashier.applications.dto.response.order.CheckoutOrderResponse;
@@ -43,6 +43,7 @@ public class CheckoutOrderUsecase {
     private final ProductClient productClient;
     private final IndempotencyManager idempotencyManager;
     private final OrderEventPublisher orderEventPublisher;
+    private final CacheManager cacheManager;
 
     public CheckoutOrderUsecase(
             OrderRepository orderRepository,
@@ -50,31 +51,34 @@ public class CheckoutOrderUsecase {
             UserClient userClient,
             ProductClient productClient,
             IndempotencyManager idempotencyManager,
-            OrderEventPublisher orderEventPublisher) {
+            OrderEventPublisher orderEventPublisher,
+            CacheManager cacheManager) {
         this.orderRepository = orderRepository;
         this.orderMapper = orderMapper;
         this.userClient = userClient;
         this.productClient = productClient;
         this.idempotencyManager = idempotencyManager;
         this.orderEventPublisher = orderEventPublisher;
+        this.cacheManager = cacheManager;
     }
 
-    private GetDetailUserResponse validateUserRole(CheckoutOrderRequest payload, String username) {
-        GetDetailUserResponse userResponse = this.userClient.getDetailUserByUsername(username);
-
+    private GetDetailUserResponse validateUserRole(String username, String key) {
+        GetDetailUserResponse userResponse = this.cacheManager.get(key, GetDetailUserResponse.class);
+        // Hanya panggil Feign/REST dan simpan cache jika cache miss
+        if (userResponse == null) {
+            userResponse = this.userClient.getDetailUserByUsername(username);
+            this.cacheManager.set(key, userResponse, Duration.ofSeconds(60));
+        }
         log.info("User response: {}", userResponse);
-
         if (!userResponse.getRoleName().equals("CASHIER")) {
             throw new UnauthorizedException("You are not allowed to create an order.");
         }
-
         return userResponse;
     }
 
-    @Transactional
     public CheckoutOrderResponse execute(CheckoutOrderRequest payload, String username, String idempotencyKey) {
         boolean hasIdempotencyKey = idempotencyKey != null && !idempotencyKey.isBlank();
-
+        String userDetailKey = "user-detail:" + username;
         // 1. Cek apakah response sudah pernah di-cache di Redis (Fast-path)
         if (hasIdempotencyKey) {
             CheckoutOrderResponse cachedResponse = this.idempotencyManager.getCachedResponse(idempotencyKey,
@@ -101,13 +105,14 @@ public class CheckoutOrderUsecase {
                 throw new ConflictException("This transaction is already being processed, please wait!");
             }
         }
-
+        boolean isStockDeducted = false;
+        String storeId = null;
         try {
-            GetDetailUserResponse userResponse = validateUserRole(payload, username);
+            GetDetailUserResponse userResponse = validateUserRole(username, userDetailKey);
             // validatePayment(payload);
 
             String cashierRoleId = userResponse.getId();
-            String storeId = userResponse.getStoreId();
+            storeId = userResponse.getStoreId();
 
             String orderId = UUID.randomUUID().toString();
             log.info("create orders");
@@ -155,13 +160,10 @@ public class CheckoutOrderUsecase {
             }
             orders.completeCheckout();
 
-            List<DeductBatchItemProductRequest> deductItems = payload.getItems().stream()
-                    .map(item -> new DeductBatchItemProductRequest(item.getProductId(), item.getQty(),
-                            item.getProductVariantId()))
-                    .toList();
-            this.productClient.deductBatchProduct(DeductBatchProductRequest.builder()
-                    .storeId(storeId)
-                    .items(deductItems).build());
+            DeductBatchProductRequest deductRequest = this.orderMapper
+                    .mapOrderPaylotToDeductBatchProductRequest(payload, storeId);
+            this.productClient.deductBatchProduct(deductRequest);
+            isStockDeducted = true;
 
             Orders savedOrder = orderRepository.save(orders);
 
@@ -194,7 +196,18 @@ public class CheckoutOrderUsecase {
 
             return response;
         } catch (Exception e) {
-            // Jika terjadi error, lepaskan kunci di Redis agar kasir bisa retry
+            if (isStockDeducted && storeId != null) {
+                try {
+                    log.warn("Checkout gagal setelah potong stok! Mengirim event restore stok...");
+                    OrderRestoreEvent restoreEvent = this.orderMapper.mapOrderPayloadToOrderRestoreEvent(payload,
+                            storeId);
+                    this.orderEventPublisher.publishOrderRestore(restoreEvent);
+                } catch (Exception pubEx) {
+                    log.error("CRITICAL: Gagal publish restore stok! Butuh rekonsiliasi manual: {}", pubEx.getMessage(),
+                            pubEx);
+                }
+            }
+            // SELALU LEPAS GEMBOK REDIS SECARA AMAN
             if (hasIdempotencyKey) {
                 log.info("Checkout failed, releasing idempotency lock for key: {}", idempotencyKey);
                 this.idempotencyManager.releaseLock(idempotencyKey);

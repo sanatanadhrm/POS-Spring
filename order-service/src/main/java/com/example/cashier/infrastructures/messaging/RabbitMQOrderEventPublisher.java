@@ -5,6 +5,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
 
 import com.example.cashier.applications.dto.event.OrderCreatedEvent;
+import com.example.cashier.applications.dto.event.OrderRestoreEvent;
 import com.example.cashier.applications.gateway.OrderEventPublisher;
 import com.example.cashier.infrastructures.config.RabbitMQConfig;
 
@@ -12,7 +13,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Adapter (Implementasi Infrastruktur) untuk OrderEventPublisher menggunakan RabbitMQ.
+ * Adapter (Implementasi Infrastruktur) untuk OrderEventPublisher menggunakan
+ * RabbitMQ.
  */
 @Component
 @RequiredArgsConstructor
@@ -23,7 +25,7 @@ public class RabbitMQOrderEventPublisher implements OrderEventPublisher {
 
     @Override
     public void publishOrderCreated(OrderCreatedEvent event) {
-        log.info("[RABBITMQ PRODUCER] Mengirim event {} untuk Order ID: {}", 
+        log.info("[RABBITMQ PRODUCER] Mengirim event {} untuk Order ID: {}",
                 RabbitMQConfig.ORDER_CREATED_ROUTING_KEY, event.getOrderId());
 
         rabbitTemplate.convertAndSend(
@@ -37,7 +39,25 @@ public class RabbitMQOrderEventPublisher implements OrderEventPublisher {
                         message.getMessageProperties().setHeader("X-Correlation-ID", correlationId);
                     }
                     return message;
-                }
-        );
+                });
+    }
+
+    @Override
+    public void publishOrderRestore(OrderRestoreEvent event) {
+        log.info("[RABBITMQ PRODUCER] Mengirim event {} untuk restore",
+                RabbitMQConfig.ORDER_RESTORE_ROUTING_KEY);
+
+        rabbitTemplate.convertAndSend(
+                RabbitMQConfig.ORDER_EXCHANGE,
+                RabbitMQConfig.ORDER_RESTORE_ROUTING_KEY,
+                event,
+                message -> {
+                    // Teruskan X-Correlation-ID jika ada di MDC agar tracing log tetap terhubung
+                    String correlationId = MDC.get("correlationId");
+                    if (correlationId != null) {
+                        message.getMessageProperties().setHeader("X-Correlation-ID", correlationId);
+                    }
+                    return message;
+                });
     }
 }

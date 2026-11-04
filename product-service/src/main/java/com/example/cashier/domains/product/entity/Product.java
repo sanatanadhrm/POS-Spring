@@ -90,4 +90,8 @@ public class Product {
         this.qty -= amount; // <-- Pengurangan stok
     }
 
+    public void addStock(int amount) {
+        this.qty += amount;
+    }
+
 }
