@@ -1,0 +1,72 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_HUB_USER = 'sanatanadhrm'
+        IMAGE_NAME      = 'cashier-order-service'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                // Checkout commit terbaru dari repository
+                checkout scm
+            }
+        }
+
+        stage('Test') {
+            steps {
+                echo 'Menjalankan unit testing order-service...'
+                dir('order-service') {
+                    sh 'chmod +x ./mvnw'
+                    sh './mvnw clean test'
+                }
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                echo 'Membuat Docker image...'
+                dir('order-service') {
+                    sh "docker build -t ${IMAGE_NAME}:latest ."
+                }
+            }
+        }
+
+        stage('Push to Docker Hub') {
+            steps {
+                echo 'Mengunggah image ke Docker Hub...'
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-credentials', 
+                    usernameVariable: 'DH_USER', 
+                    passwordVariable: 'DH_PASS'
+                )]) {
+                    sh '''
+                        # Login aman ke Docker Hub
+                        echo "$DH_PASS" | docker login -u "$DH_USER" --password-stdin
+
+                        # Tagging image
+                        docker tag ${IMAGE_NAME}:latest ${DOCKER_HUB_USER}/${IMAGE_NAME}:latest
+                        docker tag ${IMAGE_NAME}:latest ${DOCKER_HUB_USER}/${IMAGE_NAME}:${BUILD_NUMBER}
+
+                        # Push image
+                        docker push ${DOCKER_HUB_USER}/${IMAGE_NAME}:latest
+                        docker push ${DOCKER_HUB_USER}/${IMAGE_NAME}:${BUILD_NUMBER}
+
+                        # Logout
+                        docker logout
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "🎉 PIPELINE BERHASIL! Image ${IMAGE_NAME}:${BUILD_NUMBER} siap digunakan."
+        }
+        failure {
+            echo "❌ PIPELINE GAGAL! Periksa console log untuk melihat error."
+        }
+    }
+}

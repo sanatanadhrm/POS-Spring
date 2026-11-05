@@ -28,10 +28,7 @@ WORKDIR /app
 RUN addgroup -S spring && adduser -S spring -G spring
 
 # 4. Ambil file JAR hasil kompilasi dari STAGE 1
-COPY --from=builder /app/target/*.jar app.jar
-
-# Ubah kepemilikan file ke user spring
-RUN chown spring:spring app.jar
+COPY --chown=spring:spring --from=builder /app/target/*.jar app.jar
 
 # 5. Pindah ke non-root user
 USER spring:spring
